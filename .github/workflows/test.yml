@@ -1,0 +1,37 @@
+name: NovaAethrea Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - uses: astral-sh/setup-uv@v2
+        with:
+          enable-cache: true
+      - name: Install
+        run: |
+          uv pip install --system -r requirements.txt -r requirements-dev.txt
+      - name: Ruff
+        run: ruff check src tests || true
+      - name: Pytest
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          if [ -d tests ]; then pytest -q --tb=line; else echo "No tests yet"; fi
+      - name: Bandit
+        run: bandit -r src -ll -q || true
+      - name: pip-audit
+        run: pip-audit -r requirements.txt || true
