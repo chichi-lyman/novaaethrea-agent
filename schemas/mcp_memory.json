@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/chichi-lyman/novaaethrea-agent/schemas/mcp_memory.json",
+  "title": "NovaAethrea MCP Memory Schema",
+  "description": "Model Context Protocol data schemas for memory recall, context packs, and connector health between Saphira specialists. Copyright © 2026 Chelsea Megan Woods.",
+  "type": "object",
+  "definitions": {
+    "ContextPack": {
+      "type": "object",
+      "required": ["trace_id", "task_id", "facts", "preferences", "scenes", "history_slice"],
+      "properties": {
+        "trace_id": { "type": "string" },
+        "task_id": { "type": "string" },
+        "facts": { "type": "object", "additionalProperties": true },
+        "preferences": { "type": "object", "additionalProperties": true },
+        "scenes": { "type": "object", "additionalProperties": { "type": "array" } },
+        "history_slice": {
+          "type": "array",
+          "items": { "type": "object" },
+          "maxItems": 50
+        },
+        "connector_health": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "status": { "type": "string", "enum": ["ok", "degraded", "down"] },
+              "last_success_ms": { "type": ["integer", "null"] },
+              "retries": { "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        "policy_grant": {
+          "type": "string",
+          "enum": ["ALLOW", "REQUIRE_APPROVAL", "DENY"]
+        }
+      }
+    },
+    "MemoryWriteRequest": {
+      "type": "object",
+      "required": ["trace_id", "key", "value", "namespace"],
+      "properties": {
+        "trace_id": { "type": "string" },
+        "key": { "type": "string" },
+        "value": {},
+        "namespace": { "type": "string", "enum": ["facts", "preferences", "scenes", "history"] },
+        "ttl_seconds": { "type": ["integer", "null"] }
+      }
+    },
+    "MemoryReadRequest": {
+      "type": "object",
+      "required": ["trace_id", "keys"],
+      "properties": {
+        "trace_id": { "type": "string" },
+        "keys": { "type": "array", "items": { "type": "string" } },
+        "namespace": { "type": "string", "default": "facts" },
+        "include_history_limit": { "type": "integer", "default": 10, "maximum": 50 }
+      }
+    },
+    "RetryOutcome": {
+      "type": "object",
+      "required": ["connector", "attempts", "status"],
+      "properties": {
+        "connector": { "type": "string" },
+        "attempts": { "type": "integer", "minimum": 1 },
+        "status": { "type": "string", "enum": ["success", "exhausted", "circuit_open"] },
+        "backoff_ms": { "type": "integer" },
+        "last_error": { "type": ["string", "null"] }
+      }
+    },
+    "HandoffEnvelope": {
+      "type": "object",
+      "required": ["trace_id", "from_agent", "to_agent", "task_id", "objective", "policy"],
+      "properties": {
+        "trace_id": { "type": "string" },
+        "from_agent": { "type": "string" },
+        "to_agent": { "type": "string" },
+        "task_id": { "type": "string" },
+        "objective": { "type": "string" },
+        "constraints": { "type": "array", "items": { "type": "string" } },
+        "inputs": { "type": "object" },
+        "context_pack": { "$ref": "#/definitions/ContextPack" },
+        "policy": { "type": "string", "enum": ["ALLOW", "REQUIRE_APPROVAL", "DENY"] },
+        "deadline_ms": { "type": ["integer", "null"] },
+        "reply_channel": { "type": "string", "default": "orchestrator" }
+      }
+    }
+  }
+}
